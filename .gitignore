@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Raw data (do not track)
+Data/
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# Rendered files
+README.html
+
