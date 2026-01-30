@@ -1,14 +1,21 @@
 # macOS
 .DS_Store
 
-# Raw data (do not track)
+# Raw / huge data (do not track)
 Data/
+data/raw/
+data/interim/
 
 # R
 .Rhistory
 .RData
 .Rproj.user/
 
-# Rendered files
+# Rendered outputs
 README.html
 
+# Large derived files (optional)
+*.parquet
+*.rds
+*.csv.gz
+*.tsv.gz
