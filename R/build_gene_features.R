@@ -180,27 +180,61 @@ sym2ens <- getBM(
 )
 sym2ens <- sym2ens[sym2ens$hgnc_symbol != "" & sym2ens$ensembl_gene_id != "", ]
 
-# Query paralogs in Ensembl-ID space (avoids attribute-page error)
+# --- Query paralogs in Ensembl-ID space ---
+# Attribute names vary across Ensembl releases, so detect dynamically
 ens2par <- getBM(
   attributes = c("ensembl_gene_id", "hsapiens_paralog_ensembl_gene"),
   filters = "ensembl_gene_id",
   values = unique(sym2ens$ensembl_gene_id),
   mart = mart
 )
-ens2par <- ens2par[ens2par$hsapiens_paralog_ensembl_gene != ""]
-ens2par <- ens2par[ens2par$ensembl_gene_id != ens2par$hsapiens_paralog_ensembl_gene]
 
-par_counts_ens <- as.data.table(ens2par)[, .(paralog_count = uniqueN(hsapiens_paralog_ensembl_gene)), by = ensembl_gene_id]
-par_counts_sym <- merge(as.data.table(sym2ens), par_counts_ens, by = "ensembl_gene_id", all.x = FALSE)
+# Identify paralog column robustly
+paralog_col_candidates <- names(ens2par)[grepl("paralog", names(ens2par), ignore.case = TRUE)]
+if (length(paralog_col_candidates) == 0) {
+  stop(
+    "Could not find paralog column. Columns returned by biomaRt are: ",
+    paste(names(ens2par), collapse = ", ")
+  )
+}
 
-# If symbol maps to multiple Ensembl IDs, keep max count (conservative)
-par_counts_sym <- par_counts_sym[, .(paralog_count = max(paralog_count, na.rm = TRUE)), by = hgnc_symbol]
+paralog_col <- setdiff(paralog_col_candidates, "ensembl_gene_id")[1]
+
+# Clean empty + self-matches
+ens2par <- ens2par[
+  ens2par[[paralog_col]] != "" &
+    ens2par$ensembl_gene_id != ens2par[[paralog_col]],
+]
+
+# Count unique paralogs per Ensembl gene
+par_counts_ens <- as.data.table(ens2par)[
+  , .(paralog_count = uniqueN(get(paralog_col))), by = ensembl_gene_id
+]
+
+# Map back to gene symbols
+par_counts_sym <- merge(
+  as.data.table(sym2ens),
+  par_counts_ens,
+  by = "ensembl_gene_id",
+  all.x = FALSE
+)
+
+# If a symbol maps to multiple Ensembl IDs, keep the maximum count (conservative)
+par_counts_sym <- par_counts_sym[
+  , .(paralog_count = max(paralog_count, na.rm = TRUE)), by = hgnc_symbol
+]
 setnames(par_counts_sym, "hgnc_symbol", "gene_symbol")
 
-feature_table <- merge(feature_table, par_counts_sym, by = "gene_symbol", all.x = TRUE)
+# Merge into feature table
+feature_table <- merge(
+  feature_table,
+  par_counts_sym,
+  by = "gene_symbol",
+  all.x = TRUE
+)
+
 feature_table[is.na(paralog_count), paralog_count := 0L]
 feature_table[, log_paralog_count := log1p(paralog_count)]
-
 # -----------------------------
 # 6) Add STRING network degree (full network)
 # -----------------------------
