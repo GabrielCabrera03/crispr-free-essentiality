@@ -304,10 +304,4 @@ message("Wrote: ", OUT_RDS)
 
 # Optional: quick sanity correlations
 message("Sanity: Spearman(mean_expr, Chronos) = ",
-        cor(feature_table$mean_expr, feature_table$Chronos_median, method="spearman", use="complete.obs"))
-message("Sanity: Spearman(loeuf, Chronos) = ",
-        cor(feature_table$loeuf, feature_table$Chronos_median, method="spearman", use="complete.obs"))
-message("Sanity: Spearman(log_paralog_count, Chronos) = ",
-        cor(feature_table$log_paralog_count, feature_table$Chronos_median, method="spearman", use="complete.obs"))
-message("Sanity: Spearman(log_ppi_degree, Chronos) = ",
-        cor(feature_table$log_ppi_degree, feature_table$Chronos_median, method="spearman", use="complete.obs"))
+        cor(feature_table$mean_expr, feature_table$Chronos_median,
