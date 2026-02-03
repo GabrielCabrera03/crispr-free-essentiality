@@ -73,7 +73,7 @@ features.
 
 ------------------------------------------------------------------------
 
-## Feature Engineering (Week 2 milestone)
+## Feature Engineering
 
 The current milestone focuses on building a **CRISPR-free feature
 table** at the gene level.
@@ -115,4 +115,58 @@ table** at the gene level.
 
 ------------------------------------------------------------------------
 
-## Repository Structure
+## Baseline modeling results
+
+Binary essentiality labels are derived from DepMap Chronos medians
+(evaluation only)
+
+**Performance (single 80/20 split, seed = 42):**
+
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th style="text-align: right;">AUROC</th>
+<th style="text-align: right;">AUPRC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Expression only</td>
+<td style="text-align: right;">0.847</td>
+<td style="text-align: right;">0.389</td>
+</tr>
+<tr>
+<td>+ LOEUF</td>
+<td style="text-align: right;">0.833</td>
+<td style="text-align: right;">0.397</td>
+</tr>
+<tr>
+<td>+ Paralog</td>
+<td style="text-align: right;">0.839</td>
+<td style="text-align: right;">0.424</td>
+</tr>
+<tr>
+<td>Full (expr + LOEUF + paralogs + network)</td>
+<td style="text-align: right;"><strong>0.889</strong></td>
+<td style="text-align: right;"><strong>0.512</strong></td>
+</tr>
+</tbody>
+</table>
+
+Prevalence baseline AUPRC: **0.092**
+
+### Interpretation (standardized coefficients)
+
+A Standardized logistic regression coefficient test was done (per 1 SD
+increase):
+
+- Mean expression and network degree are the strongest positive
+  predictors of essentiality.
+- Paralog counts and expression variance are strong negative predictors
+- LOEUF contributes a moderate negative effect consistent with
+  evolutionary constraint
+
+Please see figures for more information: -
+`results/figures/pr_curves.png` -
+`results/figures/coefficients_full_glm.csv`
