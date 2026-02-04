@@ -156,6 +156,32 @@ Binary essentiality labels are derived from DepMap Chronos medians
 
 Prevalence baseline AUPRC: **0.092**
 
+#### Multi-Seeding
+
+To assess robustness, the train/test split of 80/20 was repeated across
+the data set to indicate that predictive performance isn’t driven by a
+particular set of genes. This shows that:
+
+- Each feature captures a partial signal, but a no single feature can
+  explain essentiality on it’s own
+
+- The full model performs consistently best across seeds
+
+  - Expression works reasonably well, but not sufficient enough by
+    itself
+
+  - LOEUF and Paralog count adds signals
+
+  - **Essentiality is multifactorial**
+
+- The model achieves an average AUPRC that is about five-fold higher
+  than the prevalence baseline, indicating enrichment of true essential
+  genes beyond random expectation.
+
+Please see figures for more information-
+`results/tables/metrics_v1_multiseed_summary.csv` -
+`results/tables/metrics_v1_multiseed.csv`
+
 ### Interpretation (standardized coefficients)
 
 A Standardized logistic regression coefficient test was done (per 1 SD
@@ -170,3 +196,20 @@ increase):
 Please see figures for more information: -
 `results/figures/pr_curves.png` -
 `results/figures/coefficients_full_glm.csv`
+
+### Logistic Regression Training
+
+Trained a logistic regression model on CRISPR-derived essentiality
+labels, using CRISPR-free features (expression, LOEUF, paralogs, PPI
+network degree)
+
+Artifacts written by the training script:
+
+\- `results/tables/logreg_training_summary.csv` (AUROC/AUPRC,
+prevalence, split info)
+
+\- `results/tables/logreg_test_predictions.csv` (per-gene predicted
+essentiality probabilities on the held-out test set)
+
+\- `results/tables/logreg_coefficients.csv` (model coefficients;
+interpretability)
