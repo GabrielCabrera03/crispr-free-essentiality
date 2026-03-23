@@ -1,0 +1,2 @@
+model,alpha,n_folds,lambda_min,lambda_1se,lambda_used,lambda_choice,n_genes,prevalence,w_pos,features
+glmnet_elasticnet_logistic,0.5,5,0.000206499181544566,0.00444889000182804,0.00444889000182804,lambda.1se,17966,0.0900033396415451,10.1106988249845,mean_expr;var_expr;loeuf;log_paralog_count;log_ppi_degree
