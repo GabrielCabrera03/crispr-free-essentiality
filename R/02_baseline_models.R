@@ -7,8 +7,11 @@ suppressPackageStartupMessages({
 
 #Paths
 
-IN_FILE <- "data/processed/gene_features_v1.tsv.gz"
-OUT_METRICS <-"results/tables/metrics_v1.csv"
+args    <- commandArgs(trailingOnly = TRUE)
+VERSION <- if (length(args) >= 1) args[1] else "v1"
+
+IN_FILE     <- "data/processed/gene_features_v1.tsv.gz"
+OUT_METRICS <- file.path("results/tables", paste0("metrics_", VERSION, ".csv"))
 
 dir.create("results", showWarnings = FALSE)
 dir.create("results/tables", showWarnings = FALSE, recursive = TRUE)
@@ -21,41 +24,37 @@ dt <- fread(IN_FILE)
 # Keep rows with labels only
 dt <- dt[!is.na(Essential_label) & !is.na(Chronos_median)]
 
-# Some features may be NA. Let's impute LOEUF simply as median impute and keep a missingness flag
+# Missingness flag only (before split — no leakage)
 dt[, loeuf_missing := as.integer(is.na(loeuf))]
-dt[is.na(loeuf), loeuf := median(loeuf, na.rn = TRUE)]
 
 #making sure response is an integer 0/1
 dt[, Essential_label := as.integer(Essential_label)]
 dt <- dt[Essential_label %in% c(0L, 1L)]
 
-#TRAIN/TEST Split
-# columns used anywhere in models
-model_cols <- c("mean_expr","var_expr","loeuf","loeuf_missing","log_paralog_count","log_ppi_degree")
+# Impute using train-only medians, apply same transform to test
+impute_cols <- c("mean_expr", "var_expr", "loeuf", "log_paralog_count", "log_ppi_degree")
 
-# create missingness flags and simple imputations
-for (cname in model_cols) {
-  if (!cname %in% names(dt)) next
-  if (is.numeric(dt[[cname]])) {
-    # replace +/-Inf with NA
-    dt[!is.finite(get(cname)), (cname) := NA_real_]
-  }
+impute_with_train <- function(train_vec, test_vec) {
+  train_vec <- as.numeric(train_vec); train_vec[!is.finite(train_vec)] <- NA_real_
+  test_vec  <- as.numeric(test_vec);  test_vec[!is.finite(test_vec)]   <- NA_real_
+  m <- median(train_vec, na.rm = TRUE)
+  train_vec[is.na(train_vec)] <- m
+  test_vec[is.na(test_vec)]   <- m
+  list(train = train_vec, test = test_vec)
 }
-
-# LOEUF already imputed; do the same for other numeric features just in case
-impute_median <- function(x) { x[is.na(x)] <- median(x, na.rm=TRUE); x }
-
-dt[, mean_expr := impute_median(mean_expr)]
-dt[, var_expr := impute_median(var_expr)]
-dt[, log_paralog_count := impute_median(log_paralog_count)]
-dt[, log_ppi_degree := impute_median(log_ppi_degree)]
 
 set.seed(42)
 n <- nrow(dt)
 train_idx <- sample(seq_len(n), size = floor(0.8 * n))
 
 train <- dt[train_idx]
-test <- dt[-train_idx]
+test  <- dt[-train_idx]
+
+for (f in impute_cols) {
+  imp <- impute_with_train(train[[f]], test[[f]])
+  train[[f]] <- imp$train
+  test[[f]]  <- imp$test
+}
 
 #  class weights to handle imbalance
 w_pos <- sum(train$Essential_label == 0) / sum(train$Essential_label == 1)

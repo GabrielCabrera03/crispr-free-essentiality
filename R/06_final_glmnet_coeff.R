@@ -116,7 +116,7 @@ coef_dt <- data.table(
 
 # Remove zeros (glmnet shrinks many terms)
 coef_dt <- coef_dt[beta != 0]
-setorder(coef_dt, -abs(beta))
+coef_dt <- coef_dt[order(-abs(beta))]
 
 fwrite(coef_dt, OUT_COEF)
 cat("Wrote coefficients:", OUT_COEF, "\n")

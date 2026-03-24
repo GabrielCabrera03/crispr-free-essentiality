@@ -8,9 +8,12 @@ suppressPackageStartupMessages({
 # -----------------------------
 # Paths
 # -----------------------------
-IN_FILE <- "data/processed/gene_features_v1.tsv.gz"
-OUT_METRICS_ALL <- "results/tables/metrics_v1_multiseed.csv"
-OUT_METRICS_SUMMARY <- "results/tables/metrics_v1_multiseed_summary.csv"
+args    <- commandArgs(trailingOnly = TRUE)
+VERSION <- if (length(args) >= 1) args[1] else "v1"
+
+IN_FILE             <- "data/processed/gene_features_v1.tsv.gz"
+OUT_METRICS_ALL     <- file.path("results/tables", paste0("metrics_", VERSION, "_multiseed.csv"))
+OUT_METRICS_SUMMARY <- file.path("results/tables", paste0("metrics_", VERSION, "_multiseed_summary.csv"))
 
 dir.create("results/tables", showWarnings = FALSE, recursive = TRUE)
 
@@ -88,15 +91,19 @@ dt <- dt[!is.na(Essential_label)]
 dt[, Essential_label := as.integer(Essential_label)]
 dt <- dt[Essential_label %in% c(0L, 1L)]
 
-# LOEUF missingness + impute
+# Missingness flag only (before split — no leakage)
 dt[, loeuf_missing := as.integer(is.na(loeuf))]
-dt[, loeuf := impute_median(loeuf)]
 
-# Defensive impute for other numeric features used
-if ("mean_expr" %in% names(dt)) dt[, mean_expr := impute_median(mean_expr)]
-if ("var_expr" %in% names(dt)) dt[, var_expr := impute_median(var_expr)]
-if ("log_paralog_count" %in% names(dt)) dt[, log_paralog_count := impute_median(log_paralog_count)]
-if ("log_ppi_degree" %in% names(dt)) dt[, log_ppi_degree := impute_median(log_ppi_degree)]
+impute_cols <- c("mean_expr", "var_expr", "loeuf", "log_paralog_count", "log_ppi_degree")
+
+impute_with_train <- function(train_vec, test_vec) {
+  train_vec <- as.numeric(train_vec); train_vec[!is.finite(train_vec)] <- NA_real_
+  test_vec  <- as.numeric(test_vec);  test_vec[!is.finite(test_vec)]   <- NA_real_
+  m <- median(train_vec, na.rm = TRUE)
+  train_vec[is.na(train_vec)] <- m
+  test_vec[is.na(test_vec)]   <- m
+  list(train = train_vec, test = test_vec)
+}
 
 # -----------------------------
 # Run multi-seed evaluation
@@ -118,7 +125,14 @@ for (s in seeds) {
   train_idx <- sample.int(n, size = floor(train_frac * n))
   train <- dt[train_idx]
   test  <- dt[-train_idx]
-  
+
+  # Impute using this seed's train-only medians
+  for (f in impute_cols) {
+    imp <- impute_with_train(train[[f]], test[[f]])
+    train[[f]] <- imp$train
+    test[[f]]  <- imp$test
+  }
+
   prevalence <- mean(test$Essential_label)
   n_test <- nrow(test)
   n_pos_test <- sum(test$Essential_label == 1L)

@@ -6,12 +6,15 @@ suppressPackageStartupMessages({
 # -----------------------------
 # Paths
 # -----------------------------
-IN_FILE <- "data/processed/gene_features_v1.tsv.gz"
-OUT_DIR <- "results/tables"
+args    <- commandArgs(trailingOnly = TRUE)
+VERSION <- if (length(args) >= 1) args[1] else "v1"
+
+IN_FILE     <- "data/processed/gene_features_v1.tsv.gz"
+OUT_DIR     <- "results/tables"
 dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
-OUT_PRED <- file.path(OUT_DIR, "logreg_test_predictions.csv")
-OUT_SUMMARY <- file.path(OUT_DIR, "logreg_training_summary.csv")
-OUT_COEF <- file.path(OUT_DIR, "logreg_coefficients.csv")   # optional but recommended
+OUT_PRED    <- file.path(OUT_DIR, paste0("logreg_", VERSION, "_test_predictions.csv"))
+OUT_SUMMARY <- file.path(OUT_DIR, paste0("logreg_", VERSION, "_training_summary.csv"))
+OUT_COEF    <- file.path(OUT_DIR, paste0("logreg_", VERSION, "_coefficients.csv"))
 
 # -----------------------------
 # Settings
