@@ -11,6 +11,37 @@ features <- c(
   "log_ppi_degree"
 )
 
+# -----------------------------
+# Load data + build train set
+# -----------------------------
+impute_median <- function(x) {
+  x <- as.numeric(x)
+  x[!is.finite(x)] <- NA_real_
+  if (all(is.na(x))) return(x)
+  x[is.na(x)] <- median(x, na.rm = TRUE)
+  x
+}
+
+dt <- fread(IN_FILE)
+dt <- dt[!is.na(Essential_label)]
+dt[, Essential_label := as.integer(Essential_label)]
+dt <- dt[Essential_label %in% c(0L, 1L)]
+
+# Missingness flag before split
+dt[, loeuf_missing := as.integer(is.na(loeuf))]
+
+# Train/test split — seed 42, 80/20, consistent with pipeline
+set.seed(42)
+train_idx <- sample(nrow(dt), floor(0.8 * nrow(dt)))
+train <- dt[train_idx]
+
+# Impute using train-only medians
+for (f in features) train[[f]] <- impute_median(train[[f]])
+
+# Class weights
+w_pos <- sum(train$Essential_label == 0L) / sum(train$Essential_label == 1L)
+train[, w := ifelse(Essential_label == 1L, w_pos, 1)]
+
 fml <- as.formula(
   paste("Essential_label ~", paste(features, collapse = " + "))
 )

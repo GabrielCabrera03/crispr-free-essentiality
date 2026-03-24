@@ -85,15 +85,8 @@ dt <- dt[!is.na(Essential_label)]
 dt[, Essential_label := as.integer(Essential_label)]
 dt <- dt[Essential_label %in% c(0L, 1L)]
 
-# Create LOEUF missingness flag + impute
+# Missingness flag only (before split — does not use values, no leakage)
 dt[, loeuf_missing := as.integer(is.na(loeuf))]
-dt[, loeuf := impute_median(loeuf)]
-
-# Defensive imputations for other numeric predictors
-dt[, mean_expr := impute_median(mean_expr)]
-dt[, var_expr := impute_median(var_expr)]
-dt[, log_paralog_count := impute_median(log_paralog_count)]
-dt[, log_ppi_degree := impute_median(log_ppi_degree)]
 
 # Quick sanity checks
 stopifnot(all(FEATURES %in% names(dt)))
@@ -107,11 +100,13 @@ cat("Prevalence overall:", mean(dt$Essential_label), "\n")
 set.seed(SEED)
 
 train_idx <- sample(nrow(dt), 0.8 * nrow(dt))
-train_data <-dt[train_idx, ]
-test_data <- dt[-train_idx, ]
+train_data <- dt[train_idx, ]
+test_data  <- dt[-train_idx, ]
+
+# Impute using train-only medians, apply same transform to test
 for (f in FEATURES) {
-  train[[f]] <- impute_median(train[[f]])
-  test[[f]]  <- impute_median(test[[f]])
+  train_data[[f]] <- impute_median(train_data[[f]])
+  test_data[[f]]  <- impute_median(test_data[[f]])
 }
 
 
@@ -119,16 +114,16 @@ for (f in FEATURES) {
 fml <- as.formula(paste("Essential_label ~", paste(FEATURES, collapse = " + ")))
 
 # Optional: class weights to handle imbalance
-w_pos <- sum(train$Essential_label == 0L) / sum(train$Essential_label == 1L)
-train[, w := ifelse(Essential_label == 1L, w_pos, 1)]
-train[!is.finite(w) | is.na(w), w := 1]
+w_pos <- sum(train_data$Essential_label == 0L) / sum(train_data$Essential_label == 1L)
+train_data[, w := ifelse(Essential_label == 1L, w_pos, 1)]
+train_data[!is.finite(w) | is.na(w), w := 1]
 
 fit <- tryCatch(
   glm(
     fml,
-    data = train,
+    data = train_data,
     family = binomial(),
-    weights = w,
+    weights = train_data$w,
     control = glm.control(maxit = 50)
   ),
   error = function(e) e
@@ -142,16 +137,16 @@ if (inherits(fit, "error")) {
 
 #prediction
 
-predictions_prob <- predict(fit, newdata = test, type = "response")
+predictions_prob <- predict(fit, newdata = test_data, type = "response")
 cat("Pred NA count:", sum(is.na(predictions_prob)), "\n")
 
 
-#Evaluation 
+#Evaluation
 
-prev <- mean(test$Essential_label)
+prev <- mean(test_data$Essential_label)
 cat("Prevalence:", prev, "\n")
-cat("AUROC:", auroc(test$Essential_label, predictions_prob), "\n")
-cat("AUPRC:", auprc_manual(test$Essential_label, predictions_prob), "\n")
+cat("AUROC:", auroc(test_data$Essential_label, predictions_prob), "\n")
+cat("AUPRC:", auprc_manual(test_data$Essential_label, predictions_prob), "\n")
 summary(fit)
 
 
@@ -160,8 +155,8 @@ summary(fit)
 THRESH <- 0.5
 
 pred_dt <- data.table(
-  gene_symbol = test$gene_symbol,
-  y_true = test$Essential_label,
+  gene_symbol = test_data$gene_symbol,
+  y_true = test_data$Essential_label,
   prob_essential = predictions_prob,
   pred_label = as.integer(predictions_prob >= THRESH)
 )
@@ -179,11 +174,11 @@ summary_dt <- data.table(
   model = "logreg_full_v1",
   seed = SEED,
   train_frac = TRAIN_FRAC,
-  n_train = nrow(train),
-  n_test = nrow(test),
+  n_train = nrow(train_data),
+  n_test = nrow(test_data),
   prev_test = prev,
-  auroc = auroc(test$Essential_label, predictions_prob),
-  auprc = auprc_manual(test$Essential_label, predictions_prob),
+  auroc = auroc(test_data$Essential_label, predictions_prob),
+  auprc = auprc_manual(test_data$Essential_label, predictions_prob),
   pred_na = sum(is.na(predictions_prob))
 )
 
