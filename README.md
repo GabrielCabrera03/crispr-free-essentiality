@@ -39,7 +39,7 @@ during model training**, relying instead on unperturbed molecular and
 evolutionary signals.
 
 We construct a gene-level feature table integrating: | Biological Scale
-| Features | |—|—| | Cell-state | Mean and variance of CCLE bulk RNA-seq
+| Features | Cell-state | Mean and variance of CCLE bulk RNA-seq
 expression | | Organism-level | gnomAD LOEUF constraint (intolerance to
 loss-of-function) | | Redundancy | Paralog count (Ensembl) | |
 Systems-level | PPI network degree (STRING) |
