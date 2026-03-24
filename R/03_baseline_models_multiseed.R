@@ -26,9 +26,9 @@ train_frac <- 0.8
 # Feature sets (ablation)
 feature_sets <- list(
   expr_only = c("mean_expr", "var_expr"),
-  expr_loeuf = c("mean_expr", "var_expr", "loeuf", "loeuf_missing"),
-  expr_loeuf_paralog = c("mean_expr", "var_expr", "loeuf", "loeuf_missing", "log_paralog_count"),
-  full_v1 = c("mean_expr", "var_expr", "loeuf", "loeuf_missing",
+  expr_loeuf = c("mean_expr", "var_expr", "loeuf"),
+  expr_loeuf_paralog = c("mean_expr", "var_expr", "loeuf", "log_paralog_count"),
+  full_v1 = c("mean_expr", "var_expr", "loeuf",
               "log_paralog_count", "log_ppi_degree")
 )
 
