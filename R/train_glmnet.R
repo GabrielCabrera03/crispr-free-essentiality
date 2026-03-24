@@ -85,11 +85,6 @@ dt <- dt[!is.na(Essential_label)]
 dt[, Essential_label := as.integer(Essential_label)]
 dt <- dt[Essential_label %in% c(0L, 1L)]
 
-# Defensive impute for predictors (will re-impute after split too)
-for (f in FEATURES) {
-  dt[[f]] <- impute_median(dt[[f]])
-}
-
 stopifnot(all(FEATURES %in% names(dt)))
 cat("Loaded rows:", nrow(dt), "\n")
 
@@ -101,34 +96,34 @@ train_idx <- sample(nrow(dt), TRAIN_FRAC * nrow(dt))
 train_data <- dt[train_idx, ]
 test_data <- dt[-train_idx, ]
 
-#impute again for train and test separately 
+#impute using train-only medians, apply same transform to test
 for (f in FEATURES) {
-  train[[f]] <- impute_median(train[[f]])
-  test[[f]] <- impute_median(test[[f]])
+  train_data[[f]] <- impute_median(train_data[[f]])
+  test_data[[f]]  <- impute_median(test_data[[f]])
 }
 
 #standardize features using TRAIN stats only
 
 for (f in FEATURES) {
-  s <- standardize_train_test(train[[f]], test[[f]])
-  train[[f]] <- s$train
-  test[[f]] <- s$test
+  s <- standardize_train_test(train_data[[f]], test_data[[f]])
+  train_data[[f]] <- s$train
+  test_data[[f]]  <- s$test
 }
 
 #building x_train, y_train, x_test, y_test
 
-y_train <- train$Essential_label
+y_train <- train_data$Essential_label
 
-x_train <- as.matrix(train[, ..FEATURES])
+x_train <- as.matrix(train_data[, ..FEATURES])
 
-y_test <- test$Essential_label
+y_test <- test_data$Essential_label
 
-x_test <- as.matrix(test[, ..FEATURES])
+x_test <- as.matrix(test_data[, ..FEATURES])
 
 #computing weights for training
 
-w <- ifelse(y_train == 1L, w_pos, 1)
 w_pos <- sum(y_train == 0L) / sum(y_train == 1L)
+w <- ifelse(y_train == 1L, w_pos, 1)
 
 #fit using glmnet
 
