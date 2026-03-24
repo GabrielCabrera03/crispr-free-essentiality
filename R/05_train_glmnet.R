@@ -6,8 +6,14 @@ suppressPackageStartupMessages({
 })
 
 #Paths
-IN_FILE <- "data/processed/gene_features_v1.tsv.gz"
-OUT_DIR <- "results/tables"
+args    <- commandArgs(trailingOnly = TRUE)
+VERSION <- if (length(args) >= 1) args[1] else "v1"
+
+IN_FILE     <- "data/processed/gene_features_v1.tsv.gz"
+OUT_DIR     <- "results/tables"
+OUT_METRICS <- file.path(OUT_DIR, paste0("glmnet_", VERSION, "_metrics.csv"))
+OUT_PRED    <- file.path(OUT_DIR, paste0("glmnet_", VERSION, "_test_predictions.csv"))
+OUT_COEF    <- file.path(OUT_DIR, paste0("glmnet_", VERSION, "_coefficients.csv"))
 dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 
 #Settings
@@ -164,3 +170,38 @@ cat("  AUPRC:", auprc_manual(y_test, prob_min), "\n\n")
 cat("lambda.1se\n")
 cat("  AUROC:", auroc(y_test, prob_1se), "\n")
 cat("  AUPRC:", auprc_manual(y_test, prob_1se), "\n")
+
+# --- Metrics ---
+metrics_dt <- data.table(
+  model      = c("glmnet_lambda.min", "glmnet_lambda.1se"),
+  auroc      = c(auroc(y_test, prob_min), auroc(y_test, prob_1se)),
+  auprc      = c(auprc_manual(y_test, prob_min), auprc_manual(y_test, prob_1se)),
+  prevalence = prev
+)
+fwrite(metrics_dt, OUT_METRICS)
+cat("\nWrote metrics to:", OUT_METRICS, "\n")
+print(metrics_dt)
+
+# --- Test predictions ---
+pred_dt <- data.table(
+  gene_symbol     = test_data$gene_symbol,
+  y_true          = y_test,
+  prob_lambda_min = prob_min,
+  prob_lambda_1se = prob_1se
+)
+setorder(pred_dt, -prob_lambda_1se)
+pred_dt[, rank := .I]
+fwrite(pred_dt, OUT_PRED)
+cat("Wrote test predictions to:", OUT_PRED, "\n")
+
+# --- Coefficients at lambda.1se ---
+coef_sparse <- coef(cvfit, s = "lambda.1se")
+coef_mat    <- as.matrix(coef_sparse)
+coef_dt <- data.table(
+  term = rownames(coef_mat),
+  beta = as.numeric(coef_mat[, 1])
+)
+coef_dt <- coef_dt[term != "(Intercept)"]
+coef_dt <- coef_dt[order(-abs(beta))]
+fwrite(coef_dt, OUT_COEF)
+cat("Wrote coefficients to:", OUT_COEF, "\n")

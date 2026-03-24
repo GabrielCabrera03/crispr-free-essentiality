@@ -21,7 +21,7 @@ run_step 1 01_build_gene_features.R
 run_step 2 02_baseline_models.R          "$VERSION"
 run_step 3 03_baseline_models_multiseed.R "$VERSION"
 run_step 4 04_training_logreg.R          "$VERSION"
-run_step 5 05_train_glmnet.R
+run_step 5 05_train_glmnet.R             "$VERSION"
 run_step 6 06_final_glmnet_coeff.R
 run_step 7 07_interpret_coefficients.R
 run_step 8 08_plot_pr_curves.R
