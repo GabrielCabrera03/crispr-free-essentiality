@@ -1,12 +1,12 @@
-<hr>
+---
 title: "README"
 author: "Gabriel Cabrera"
-date: "2026-01-30"
-output: html_document
-editor_options: 
-  markdown: 
+date: "2026-03-25"
+output: github_document
+editor_options:
+  markdown:
     wrap: 72
-<hr>
+---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
  
 > **Predicting gene essentiality from unperturbed biological priors — without training on CRISPR perturbation data.**
  
-Gene essentiality can be predicted with **AUROC 0.889** using only evolutionary and expression features, with no CRISPR training data. This represents a **~5× enrichment** over the prevalence baseline (AUPRC: 0.512 vs. 0.092).
+Gene essentiality can be predicted with **AUROC 0.890** using only evolutionary and expression features, with no CRISPR training data. This represents a **~5.5× enrichment** over the prevalence baseline (AUPRC: 0.510 vs. 0.092). Performance is robust to model choice — logistic regression and elastic net yield equivalent results (AUROC ~0.889).
  
 <hr>
 
@@ -113,12 +113,12 @@ Gene
 | Model | AUROC | AUPRC |
 |---|---|---|
 | Expression only | 0.847 | 0.389 |
-| + LOEUF | 0.833 | 0.397 |
-| + Paralog count | 0.839 | 0.424 |
-| **Full model** (expr + LOEUF + paralogs + network) | **0.889** | **0.512** |
+| + LOEUF | 0.833 | 0.393 |
+| + Paralog count | 0.837 | 0.414 |
+| **Full model** (expr + LOEUF + paralogs + network) | **0.890** | **0.510** |
 | Prevalence baseline | — | 0.092 |
- 
-The full model achieves a **~5.6× AUPRC enrichment** over the random baseline.
+
+The full model achieves a **~5.5× AUPRC enrichment** over the random baseline.
  
 ### Multi-Seed Robustness
  
@@ -129,7 +129,17 @@ To confirm that performance is not driven by a particular train/test split, the 
 - **Expression alone is a strong baseline** but meaningfully improves with constraint, redundancy, and network features
 - **Essentiality is multifactorial**: the convergence of evolutionary, expression, and network signals outperforms any single axis
  
-See `results/tables/metrics_v1_multiseed_summary.csv` for full multi-seed summary statistics.
+See `results/tables/metrics_v3_multiseed_summary.csv` for full multi-seed summary statistics.
+
+### Model Comparison — Logistic Regression vs. Elastic Net (seed = 42)
+
+| Model | AUROC | AUPRC |
+|---|---|---|
+| Logistic regression | 0.890 | 0.510 |
+| glmnet (lambda.min) | 0.890 | 0.510 |
+| glmnet (lambda.1se) | 0.888 | 0.515 |
+
+Regularization adds no meaningful improvement over plain logistic regression with 5 features, confirming that the signal is not an artifact of model complexity.
  
 ![PR Curves](results/figures/pr_curves.png)
  
@@ -155,14 +165,46 @@ See [`results/figures/coefficients_full_glm.csv`](results/figures/coefficients_f
  
 | File | Description |
 |---|---|
-| `results/tables/logreg_training_summary.csv` | AUROC/AUPRC, prevalence, split info |
-| `results/tables/logreg_test_predictions.csv` | Per-gene predicted essentiality probabilities |
-| `results/tables/logreg_coefficients.csv` | Standardized model coefficients |
-| `results/tables/metrics_v1_multiseed.csv` | Per-seed performance metrics |
-| `results/tables/metrics_v1_multiseed_summary.csv` | Summary statistics across seeds |
+| `results/tables/metrics_v3.csv` | Ablation AUROC/AUPRC per feature set (single split) |
+| `results/tables/metrics_v3_multiseed.csv` | Per-seed performance metrics (5 seeds) |
+| `results/tables/metrics_v3_multiseed_summary.csv` | Summary statistics across seeds |
+| `results/tables/logreg_v3_training_summary.csv` | Logistic regression AUROC/AUPRC, prevalence, split info |
+| `results/tables/logreg_v3_test_predictions.csv` | Per-gene predicted essentiality probabilities (logistic regression) |
+| `results/tables/logreg_v3_coefficients.csv` | Logistic regression model coefficients |
+| `results/tables/glmnet_v3_metrics.csv` | Elastic net AUROC/AUPRC for lambda.min and lambda.1se |
+| `results/tables/glmnet_v3_test_predictions.csv` | Per-gene predicted probabilities (elastic net) |
+| `results/tables/glmnet_v3_coefficients.csv` | Elastic net coefficients at lambda.1se |
  
 <hr>
 
+## Reproducing This Work
+
+All results can be reproduced by running the pipeline script from the project root:
+
+```bash
+bash run_pipeline.sh v3
+```
+
+This runs scripts `01` through `08` in order, writing all versioned outputs to `results/tables/` and `results/figures/`. The version suffix (`v3`) is appended to all output filenames, so prior results are never overwritten.
+
+### Pipeline Scripts
+
+| Script | Purpose |
+|---|---|
+| `R/01_build_gene_features.R` | Build gene-level feature table from raw sources |
+| `R/02_baseline_models.R` | Single-seed ablation study (logistic regression) |
+| `R/03_baseline_models_multiseed.R` | Multi-seed robustness evaluation |
+| `R/04_training_logreg.R` | Full logistic regression with prediction outputs |
+| `R/05_train_glmnet.R` | Elastic net evaluation |
+| `R/06_final_glmnet_coeff.R` | Final elastic net coefficients (full data) |
+| `R/07_interpret_coefficients.R` | Standardized coefficient interpretation |
+| `R/08_plot_pr_curves.R` | PR curve visualization |
+
+### Raw Data
+
+Raw data files are not redistributed. Place them in `data/raw/` before running `01_build_gene_features.R`. See [Data Sources](#data-sources) for download links.
+
+<hr>
 
 ## Limitations & Future Directions
  

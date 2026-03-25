@@ -1,17 +1,18 @@
-<hr>
-title: “README” author: “Gabriel Cabrera” date: “2026-01-30” output:
-html\_document editor\_options: markdown: wrap: 72
-<hr>
+README
+================
+Gabriel Cabrera
+2026-03-25
 
 # CRISPR-free Essentiality
 
 > **Predicting gene essentiality from unperturbed biological priors —
 > without training on CRISPR perturbation data.**
 
-Gene essentiality can be predicted with **AUROC 0.889** using only
+Gene essentiality can be predicted with **AUROC 0.890** using only
 evolutionary and expression features, with no CRISPR training data. This
-represents a **~5× enrichment** over the prevalence baseline (AUPRC:
-0.512 vs. 0.092).
+represents a **~5.5× enrichment** over the prevalence baseline (AUPRC:
+0.510 vs. 0.092). Performance is robust to model choice — logistic
+regression and elastic net yield equivalent results (AUROC ~0.889).
 
 <hr>
 
@@ -38,11 +39,11 @@ whether **gene essentiality can be predicted without using CRISPR data
 during model training**, relying instead on unperturbed molecular and
 evolutionary signals.
 
-We construct a gene-level feature table integrating: | Biological Scale
-| Features | Cell-state | Mean and variance of CCLE bulk RNA-seq
-expression | | Organism-level | gnomAD LOEUF constraint (intolerance to
-loss-of-function) | | Redundancy | Paralog count (Ensembl) | |
-Systems-level | PPI network degree (STRING) |
+We construct a gene-level feature table integrating: \| Biological Scale
+\| Features \| \|—\|—\| \| Cell-state \| Mean and variance of CCLE bulk
+RNA-seq expression \| \| Organism-level \| gnomAD LOEUF constraint
+(intolerance to loss-of-function) \| \| Redundancy \| Paralog count
+(Ensembl) \| \| Systems-level \| PPI network degree (STRING) \|
 
 Models are trained **exclusively** on these non-CRISPR features and
 evaluated against independent CRISPR-based benchmarks (DepMap Chronos).
@@ -66,50 +67,16 @@ Raw datasets are not included in this repository due to size and
 licensing restrictions. Scripts are provided to reproduce all derived
 features from the sources below.
 
-<table>
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
-</colgroup>
-<thead>
-<tr>
-<th>Source</th>
-<th>Version</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://depmap.org/portal/">DepMap Chronos</a></td>
-<td>23Q4</td>
-<td>Evaluation-only essentiality labels</td>
-</tr>
-<tr>
-<td><a href="https://depmap.org/portal/download/">CCLE RNA-seq</a></td>
-<td>—</td>
-<td>Baseline expression features</td>
-</tr>
-<tr>
-<td><a href="https://gnomad.broadinstitute.org/">gnomAD</a></td>
-<td>v2.1.1</td>
-<td>Human genetic constraint (LOEUF)</td>
-</tr>
-<tr>
-<td><a href="https://ensembl.org/">Ensembl</a></td>
-<td>GRCh38</td>
-<td>Paralog relationships</td>
-</tr>
-<tr>
-<td><a href="https://string-db.org/">STRING</a></td>
-<td>v12.0</td>
-<td>Protein–protein interaction network</td>
-</tr>
-</tbody>
-</table>
+| Source | Version | Purpose |
+|----|----|----|
+| [DepMap Chronos](https://depmap.org/portal/) | 23Q4 | Evaluation-only essentiality labels |
+| [CCLE RNA-seq](https://depmap.org/portal/download/) | — | Baseline expression features |
+| [gnomAD](https://gnomad.broadinstitute.org/) | v2.1.1 | Human genetic constraint (LOEUF) |
+| [Ensembl](https://ensembl.org/) | GRCh38 | Paralog relationships |
+| [STRING](https://string-db.org/) | v12.0 | Protein–protein interaction network |
 
 > **Ground truth**: Binary essentiality labels are derived from median
-> Chronos scores (threshold: Chronos &lt; −0.5). Labels are used **for
+> Chronos scores (threshold: Chronos \< −0.5). Labels are used **for
 > evaluation only** and are never incorporated into feature
 > construction.
 
@@ -130,7 +97,7 @@ signals across four biological scales:
 ### Ground truth (evaluation only)
 
 - Binary essentiality labels derived from median Chronos scores
-- Threshold: Chronos &lt; −0.5
+- Threshold: Chronos \< −0.5
 - Labels are **never used during feature construction**
 
 ------------------------------------------------------------------------
@@ -139,49 +106,15 @@ signals across four biological scales:
 
 ### Ablation — Single Split (80/20, seed = 42)
 
-<table>
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
-</colgroup>
-<thead>
-<tr>
-<th>Model</th>
-<th>AUROC</th>
-<th>AUPRC</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Expression only</td>
-<td>0.847</td>
-<td>0.389</td>
-</tr>
-<tr>
-<td>+ LOEUF</td>
-<td>0.833</td>
-<td>0.397</td>
-</tr>
-<tr>
-<td>+ Paralog count</td>
-<td>0.839</td>
-<td>0.424</td>
-</tr>
-<tr>
-<td><strong>Full model</strong> (expr + LOEUF + paralogs + network)</td>
-<td><strong>0.889</strong></td>
-<td><strong>0.512</strong></td>
-</tr>
-<tr>
-<td>Prevalence baseline</td>
-<td>—</td>
-<td>0.092</td>
-</tr>
-</tbody>
-</table>
+| Model                                              | AUROC     | AUPRC     |
+|----------------------------------------------------|-----------|-----------|
+| Expression only                                    | 0.847     | 0.389     |
+| \+ LOEUF                                           | 0.833     | 0.393     |
+| \+ Paralog count                                   | 0.837     | 0.414     |
+| **Full model** (expr + LOEUF + paralogs + network) | **0.890** | **0.510** |
+| Prevalence baseline                                | —         | 0.092     |
 
-The full model achieves a **~5.6× AUPRC enrichment** over the random
+The full model achieves a **~5.5× AUPRC enrichment** over the random
 baseline.
 
 ### Multi-Seed Robustness
@@ -199,8 +132,20 @@ findings:
 - **Essentiality is multifactorial**: the convergence of evolutionary,
   expression, and network signals outperforms any single axis
 
-See `results/tables/metrics_v1_multiseed_summary.csv` for full
+See `results/tables/metrics_v3_multiseed_summary.csv` for full
 multi-seed summary statistics.
+
+### Model Comparison — Logistic Regression vs. Elastic Net (seed = 42)
+
+| Model               | AUROC | AUPRC |
+|---------------------|-------|-------|
+| Logistic regression | 0.890 | 0.510 |
+| glmnet (lambda.min) | 0.890 | 0.510 |
+| glmnet (lambda.1se) | 0.888 | 0.515 |
+
+Regularization adds no meaningful improvement over plain logistic
+regression with 5 features, confirming that the signal is not an
+artifact of model complexity.
 
 <figure>
 <img src="results/figures/pr_curves.png" alt="PR Curves" />
@@ -214,48 +159,13 @@ multi-seed summary statistics.
 Standardized logistic regression coefficients (per 1 SD increase in each
 feature):
 
-<table>
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
-</colgroup>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Direction</th>
-<th>Interpretation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Mean expression</td>
-<td>↑ Positive</td>
-<td>Highly expressed genes are more likely essential</td>
-</tr>
-<tr>
-<td>PPI network degree</td>
-<td>↑ Positive</td>
-<td>Hub genes in interaction networks tend to be essential</td>
-</tr>
-<tr>
-<td>Expression variance</td>
-<td>↓ Negative</td>
-<td>Stably expressed genes are more essential than variable ones</td>
-</tr>
-<tr>
-<td>Paralog count</td>
-<td>↓ Negative</td>
-<td>Genes with redundant paralogs are buffered against lethality</td>
-</tr>
-<tr>
-<td>LOEUF</td>
-<td>↓ Negative</td>
-<td>Genes under strong evolutionary constraint are more likely
-essential</td>
-</tr>
-</tbody>
-</table>
+| Feature | Direction | Interpretation |
+|----|----|----|
+| Mean expression | ↑ Positive | Highly expressed genes are more likely essential |
+| PPI network degree | ↑ Positive | Hub genes in interaction networks tend to be essential |
+| Expression variance | ↓ Negative | Stably expressed genes are more essential than variable ones |
+| Paralog count | ↓ Negative | Genes with redundant paralogs are buffered against lethality |
+| LOEUF | ↓ Negative | Genes under strong evolutionary constraint are more likely essential |
 
 Mean expression and network degree are the **strongest positive
 predictors**. Paralog count and expression variance are the **strongest
@@ -268,40 +178,52 @@ for full standardized coefficient values.
 
 ### Output Artifacts
 
-<table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
-<thead>
-<tr>
-<th>File</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>results/tables/logreg_training_summary.csv</code></td>
-<td>AUROC/AUPRC, prevalence, split info</td>
-</tr>
-<tr>
-<td><code>results/tables/logreg_test_predictions.csv</code></td>
-<td>Per-gene predicted essentiality probabilities</td>
-</tr>
-<tr>
-<td><code>results/tables/logreg_coefficients.csv</code></td>
-<td>Standardized model coefficients</td>
-</tr>
-<tr>
-<td><code>results/tables/metrics_v1_multiseed.csv</code></td>
-<td>Per-seed performance metrics</td>
-</tr>
-<tr>
-<td><code>results/tables/metrics_v1_multiseed_summary.csv</code></td>
-<td>Summary statistics across seeds</td>
-</tr>
-</tbody>
-</table>
+| File | Description |
+|----|----|
+| `results/tables/metrics_v3.csv` | Ablation AUROC/AUPRC per feature set (single split) |
+| `results/tables/metrics_v3_multiseed.csv` | Per-seed performance metrics (5 seeds) |
+| `results/tables/metrics_v3_multiseed_summary.csv` | Summary statistics across seeds |
+| `results/tables/logreg_v3_training_summary.csv` | Logistic regression AUROC/AUPRC, prevalence, split info |
+| `results/tables/logreg_v3_test_predictions.csv` | Per-gene predicted essentiality probabilities (logistic regression) |
+| `results/tables/logreg_v3_coefficients.csv` | Logistic regression model coefficients |
+| `results/tables/glmnet_v3_metrics.csv` | Elastic net AUROC/AUPRC for lambda.min and lambda.1se |
+| `results/tables/glmnet_v3_test_predictions.csv` | Per-gene predicted probabilities (elastic net) |
+| `results/tables/glmnet_v3_coefficients.csv` | Elastic net coefficients at lambda.1se |
+
+<hr>
+
+## Reproducing This Work
+
+All results can be reproduced by running the pipeline script from the
+project root:
+
+``` bash
+bash run_pipeline.sh v3
+```
+
+This runs scripts `01` through `08` in order, writing all versioned
+outputs to `results/tables/` and `results/figures/`. The version suffix
+(`v3`) is appended to all output filenames, so prior results are never
+overwritten.
+
+### Pipeline Scripts
+
+| Script | Purpose |
+|----|----|
+| `R/01_build_gene_features.R` | Build gene-level feature table from raw sources |
+| `R/02_baseline_models.R` | Single-seed ablation study (logistic regression) |
+| `R/03_baseline_models_multiseed.R` | Multi-seed robustness evaluation |
+| `R/04_training_logreg.R` | Full logistic regression with prediction outputs |
+| `R/05_train_glmnet.R` | Elastic net evaluation |
+| `R/06_final_glmnet_coeff.R` | Final elastic net coefficients (full data) |
+| `R/07_interpret_coefficients.R` | Standardized coefficient interpretation |
+| `R/08_plot_pr_curves.R` | PR curve visualization |
+
+### Raw Data
+
+Raw data files are not redistributed. Place them in `data/raw/` before
+running `01_build_gene_features.R`. See [Data Sources](#data-sources)
+for download links.
 
 <hr>
 
@@ -321,12 +243,13 @@ for full standardized coefficient values.
 
 ### Future Directions
 
-- ☐ Paralog-aware train/test splitting
-- ☐ Per-lineage essentiality modeling (hematologic vs. solid tumors)
-- ☐ Negative control validation (permuted labels, random gene sets)
-- ☐ Comparison to published CRISPR-free essentiality baselines
-- ☐ Model calibration assessment (Brier score, reliability diagrams)
-- ☐ Extension to non-cancer contexts where CRISPR screens are infeasible
+- [ ] Paralog-aware train/test splitting
+- [ ] Per-lineage essentiality modeling (hematologic vs. solid tumors)
+- [ ] Negative control validation (permuted labels, random gene sets)
+- [ ] Comparison to published CRISPR-free essentiality baselines
+- [ ] Model calibration assessment (Brier score, reliability diagrams)
+- [ ] Extension to non-cancer contexts where CRISPR screens are
+  infeasible
 
 <hr>
 
