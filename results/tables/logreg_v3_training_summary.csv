@@ -1,0 +1,2 @@
+model,seed,train_frac,n_train,n_test,prev_test,auroc,auprc,pred_na
+logreg_full_v1,42,0.8,14372,3594,0.0923761825264329,0.889764761067586,0.509768130459084,0
